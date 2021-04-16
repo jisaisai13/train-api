@@ -69,6 +69,23 @@ router.post('/user/infoUpdate', async (req, res) => {
     }
   })
 })
+//用户个人信息查询
+router.post('/select/user', async (req, res) => {
+  let sel = 'SELECT* FROM user where phone = ?'
+  var selectParams = [req.body.phone]
+  await User.query(sel,selectParams,(err, data) => {
+    if (err) {
+      console.log(err)
+    }
+    else {
+      return res.json({
+        code: 0,
+        message: 'success',
+        data: data,
+      })
+    }
+  })
+})
 //用户密码修改
 //TODO 还未完成等待编写
 router.post('/user/passwordUpdate', async (req, res) => {
@@ -140,7 +157,6 @@ router.post('/select/ticket', async (req, res) => {
   await User.query(sel,selectParams,(err, data) => {
     if (err) {
       console.log(err)
-      console.log('请求参数：',selectParams)
     }
     else {
       console.log(res)

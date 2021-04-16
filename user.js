@@ -6,14 +6,4 @@ let connection=mysql.createConnection({
     database : 'train'
 });
 connection.connect()
-// let se = 'SELECT* from train where start_point=? and end_point=? and start_time like ?"%"'
-// connection.query(se,["深圳","上海","2021-03-20"], (err, data) => {
-//   if (err) {
-//     console.log(err)
-//   }
-//   else {
-//     console.log(data)
-//   }
-// })
-
-module.exports=connection
+module.exports=connection;
