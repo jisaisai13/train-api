@@ -52,61 +52,6 @@ router.post('/register', async (req, res) => {
     }
   })
 })
-//用户个人信息修改
-router.post('/user/infoUpdate', async (req, res) => {
-  var updateSql = 'UPDATE user SET username=? WHERE phone = ?'
-  var updadeSqlParams = [req.body.username, req.body.phone]
-  await User.query(updateSql, updadeSqlParams, function (err, data) {
-    if (err) {
-      console.log(err)
-    }
-    else {
-      return res.json({
-        code: 0,
-        message: '更新成功',
-        result: data
-      })
-    }
-  })
-})
-//用户个人信息查询
-router.post('/select/user', async (req, res) => {
-  let sel = 'SELECT* FROM user where phone = ?'
-  var selectParams = [req.body.phone]
-  await User.query(sel,selectParams,(err, data) => {
-    if (err) {
-      console.log(err)
-    }
-    else {
-      return res.json({
-        code: 0,
-        message: 'success',
-        data: data,
-      })
-    }
-  })
-})
-//用户密码修改
-//TODO 还未完成等待编写
-router.post('/user/passwordUpdate', async (req, res) => {
-  var selectSql = 'SELECT password from user WHERE phone = ? '
-  var passwordold = await User
-  var selectParams = [req.body.password, req.body.phone,req.body.newPassword]
-  var updateSql = 'UPDATE user SET password=? WHERE phone = ?'
-  var updadeSqlParams = [req.body.password, req.body.phone,req.body.newPassword]
-  await User.query(updateSql, updadeSqlParams, function (err, data) {
-    if (err) {
-      console.log(err)
-    }
-    else {
-      return res.json({
-        code: 0,
-        message: '更新成功',
-        result: data
-      })
-    }
-  })
-})
 //用户登录路径
 router.post('/login', async (req, res) => {
   let sel = 'SELECT* FROM user where phone=? and password=?'
@@ -133,6 +78,75 @@ router.post('/login', async (req, res) => {
 
     }
   })
+})
+//用户个人信息查询
+router.post('/select/user', async (req, res) => {
+  let sel = 'SELECT* FROM user where phone = ?'
+  var selectParams = [req.body.phone]
+  await User.query(sel,selectParams,(err, data) => {
+    if (err) {
+      console.log(err)
+    }
+    else {
+      return res.json({
+        code: 0,
+        message: 'success',
+        data: data,
+      })
+    }
+  })
+})
+//用户个人信息修改
+router.post('/user/infoUpdate', async (req, res) => {
+  var updateSql = 'UPDATE user SET username=? WHERE phone = ?'
+  var updadeSqlParams = [req.body.username, req.body.phone]
+  await User.query(updateSql, updadeSqlParams,  (err, data) => {
+    if (err) {
+      console.log(err)
+    }
+    else {
+      return res.json({
+        code: 0,
+        message: '更新成功',
+        result: data
+      })
+    }
+  })
+})
+//用户密码修改
+router.post('/user/passwordUpdate', async (req, res) => {
+  var selectSql = 'SELECT * FROM user WHERE phone = ? and password = ? ';
+  var selectParams = [req.body.phone,req.body.password ];
+  await User.query(selectSql, selectParams, (err,data) => {
+    if(err){
+      console.log(err);
+    }
+    if(!data[0]){
+      res.status(200).json({
+        code: 1,
+        message: '原密码错误'
+      })
+    }
+    else {
+      var updateSql = 'UPDATE user SET password = ? WHERE phone = ?'
+      var updadeSqlParams = [req.body.newPassword,req.body.phone]
+      User.query(updateSql, updadeSqlParams, function (err, data) {
+        if (err) {
+          console.log(err)
+        }
+        else {
+          return res.json({
+            code: 0,
+            message: '修改成功',
+            result: data
+          })
+        }
+      })
+    }
+    
+  })
+
+
 })
 //选择出发地或目的地
 router.get('/select/city', async (req, res) => {
