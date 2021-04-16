@@ -124,7 +124,7 @@ router.post('/user/passwordUpdate', async (req, res) => {
     if(!data[0]){
       res.status(200).json({
         code: 1,
-        message: '原密码错误'
+        message: '原密码错误,请重试'
       })
     }
     else {
