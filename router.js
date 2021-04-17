@@ -128,17 +128,29 @@ router.post('/user/passwordUpdate', async (req, res) => {
       })
     }
     else {
-      var updateSql = 'UPDATE user SET password = ? WHERE phone = ?'
-      var updadeSqlParams = [req.body.newPassword,req.body.phone]
-      User.query(updateSql, updadeSqlParams, function (err, data) {
-        if (err) {
-          console.log(err)
+      const selectSql = 'SELECT * FROM user WHERE phone = ? and password = ? ';
+      const selectParams = [req.body.phone,req.body.newPassword ];
+      User.query(selectSql, selectParams, (err,data) => {
+        if(data[0]){
+          res.status(200).json({
+            code: 2,
+            message: '新旧密码相同，请重新输入'
+          })
         }
-        else {
-          return res.json({
-            code: 0,
-            message: '修改成功',
-            result: data
+        else{
+          var updateSql = 'UPDATE user SET password = ? WHERE phone = ?'
+          var updadeSqlParams = [req.body.newPassword,req.body.phone]
+          User.query(updateSql, updadeSqlParams, function (err, data) {
+            if (err) {
+              console.log(err)
+            }
+            else {
+              return res.json({
+                code: 0,
+                message: '修改成功,请重新登录',
+                result: data
+              })
+            }
           })
         }
       })
