@@ -335,6 +335,7 @@ router.post('/select/ticket/byTicketId', async (req, res) => {
 //根据passengers id同时查询多位passenger
 router.post('/select/passenger/byIds', async (req, res) => {
   let selectSql = 'select * from passenger where id in (?)'
+  let selectSqlParams = [(req.body.ids).split(',')]
   await User.query(selectSql, selectSqlParams, (err, data) => {
     if (err) {
       console.log(err)
@@ -348,8 +349,8 @@ router.post('/select/passenger/byIds', async (req, res) => {
     }
   }) 
 })
-//新建订单
-router.post('/add/orders', async (req, res) => {
+//找回员工密码
+router.post('/employee/findps', async (req, res) => {
   let sel = 'SELECT* FROM user where telephone=?'
   await User.query(sel, [req.body.telephone], (err, data) => {
     if (err) {
