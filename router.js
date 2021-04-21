@@ -107,8 +107,8 @@ router.post('/user/infoUpdate', async (req, res) => {
     else {
       return res.json({
         code: 0,
-        message: '更新成功',
-        result: data
+        message: '修改成功',
+        data: data
       })
     }
   })
@@ -148,7 +148,7 @@ router.post('/user/passwordUpdate', async (req, res) => {
               return res.json({
                 code: 0,
                 message: '修改成功,请重新登录',
-                result: data
+                data: data
               })
             }
           })
@@ -178,7 +178,7 @@ router.get('/select/city', async (req, res) => {
 })
 //根据出发地及目的地出发时间查询火车信息
 router.post('/select/ticket', async (req, res) => {
-  let sel = 'SELECT* from ticket where start_point=? and end_point=? and start_time like ?"%"'
+  let sel = 'SELECT* from ticket where start_point=? and end_point=? and start_time like ?"%" order by start_time ASC'
   var selectParams = [req.body.start_point, req.body.end_point,req.body.start_time,req.body.is_student]
   await User.query(sel,selectParams,(err, data) => {
     if (err) {
@@ -194,76 +194,162 @@ router.post('/select/ticket', async (req, res) => {
     }
   })
 })
-//员工信息更新
-router.post('/employee/infoUpdate', async (req, res) => {
-  var updateSql = 'UPDATE user SET email=?,idcard=?,telephone=? WHERE accounts = ?'
-  var updadeSqlParams = [req.body.email, req.body.idcard, req.body.telephone, req.body.accounts]
-  await User.query(updateSql, updadeSqlParams, function (err, data) {
+//新建passenger乘客
+router.post('/add/passenger', async (req, res) => {
+  let sel = 'SELECT id FROM user where phone=?'
+  await User.query(sel, [req.body.user], (err, data) => {
     if (err) {
       console.log(err)
     }
     else {
-      return res.json({
-        code: 0,
-        message: '更新成功',
-        result: data
+      const userid = data[0].id;
+      let sel = 'SELECT * FROM passenger where idnumber=?'
+      User.query(sel,[req.body.idNumber],(err,data) => {
+        if (!data[0]) {
+          let addsel = 'INSERT INTO passenger(userid,realName,idType,idnumber,genderType,contactNumber,isStudent) VALUES(?,?,?,?,?,?,?)';
+          let addSqlParams = [userid,req.body.realName,req.body.idType,req.body.idNumber,req.body.genderType,req.body.contactNumber,req.body.passengerType]
+          User.query(addsel, addSqlParams, (err, data) => {
+            if (err) {
+              res.status(500).json({
+                code: 500,
+                message: '服务端出错'
+              })
+              console.log(err)
+            }
+            else {
+              res.status(200).json({
+                code: 0,
+                message: '添加成功'
+              })
+            }
+          })
+        }
+        else {
+          res.status(200).json({
+            code: -1,
+            message: '该身份证号已注册',
+          })
+    
+        }
       })
+      
     }
   })
 })
-//员工信息删除根据id
-router.post('/employee/infodelete', async (req, res) => {
-  var deleteSql = 'DELETE FROM user WHERE id = ?'
-  var deleteSqlParams = [req.body.id,]
-  await User.query(deleteSql,deleteSqlParams, function (err, data) {
+//根据注册手机号查询该账号下的passenger
+router.post('/select/passenger/byUser', async (req, res) => {
+  let sel = 'SELECT id FROM user where phone=?'
+  await User.query(sel, [req.body.user], (err, data) => {
+    if (err) {
+      console.log(err)
+    }
+    else{
+      let selectSql = 'select * from passenger where userid = ?'
+      let selectSqlParams = [data[0].id]
+      User.query(selectSql, selectSqlParams, (err, data) => {
+        if (err) {
+          console.log(err)
+        }
+        else {
+          return res.json({
+            code: 0,
+            message: '查询成功',
+            data: data
+          })
+        }
+      }) 
+    }
+  })
+})
+//根据passengerId查询该passenger信息
+router.post('/select/passenger/byId', async (req, res) => {
+  let selectSql = 'select * from passenger where id = ?'
+  let selectSqlParams = [req.body.editid]
+  await User.query(selectSql, selectSqlParams, (err, data) => {
+    console.log(selectSqlParams)
     if (err) {
       console.log(err)
     }
     else {
       return res.json({
         code: 0,
-        message: '员工信息删除成功',
+        message: '查询成功',
+        data: data
+      })
+    }
+  }) 
+})
+//根据passengerId修改该passenger信息
+router.post('/update/passenger', async (req, res) => {
+  var updateSql = 'UPDATE passenger SET contactNumber = ?,isStudent = ? where id = ? '
+  var updadeSqlParams = [req.body.contactNumber,req.body.passengerType,req.body.editid]
+  await User.query(updateSql, updadeSqlParams, (err, data) => {
+    if (err) {
+      console.log(err)
+    }
+    else {
+      return res.json({
+        code: 0,
+        message: '修改成功',
+        data: data
+      })
+    }
+  }) 
+})
+//根据passengerId删除该乘客
+router.post('/delete/passenger', async (req, res) => {
+  var deleteSql = 'DELETE FROM passenger WHERE id = ?'
+  var deleteSqlParams = [req.body.editid,]
+  await User.query(deleteSql,deleteSqlParams, function (err, data) {
+    console.log(deleteSqlParams)
+    if (err) {
+      console.log(err)
+    }
+    else {
+      return res.json({
+        code: 0,
+        message: '删除成功',
         data: data
       })
     }
   })
 })
-//员工信息全部更新根据id
-router.post('/employee/infoUpdates', async (req, res) => {
-  var updateSql = 'UPDATE user SET accounts=?,name=?, professional=?,email=?,idcard=?, telephone=?, department=?,posttype=?,password=? WHERE id = ?'
-  var updadeSqlParams = [req.body.accounts, req.body.name, req.body.professional, req.body.email, req.body.idcard, req.body.telephone, req.body.department, req.body.posttype, req.body.password,req.body.id]
-  await User.query(updateSql, updadeSqlParams, function (err, data) {
+//根据ticket_id查询车票详情
+router.post('/select/ticket/byTicketId', async (req, res) => {
+  var selectSql = 'select * from ticket where ticket_id = ? '
+  var selectSqlParams = [req.body.ticketId]
+  await User.query(selectSql, selectSqlParams,  (err, data) => {
     if (err) {
       console.log(err)
     }
     else {
       return res.json({
         code: 0,
-        message: '更新成功',
-        result: data
+        message: '查询成功',
+        data: data
       })
     }
   })
 
 })
-//根据工号查询员工信息
-router.post('/employee/info', async (req, res) => {
-  let sel = 'SELECT* FROM user where accounts=?'
-  await User.query(sel, [req.body.accounts], (err, data) => {
+//根据passengers id同时查询多位passenger
+router.post('/select/passenger/byIds', async (req, res) => {
+  let selectSql = 'select * from passenger where id in (?)'
+  await User.query(selectSql, selectSqlParams, (err, data) => {
     if (err) {
       console.log(err)
     }
     else {
       return res.json({
         code: 0,
-        message: '单个员工信息',
-        data: data,
+        message: '查询成功',
+        data: data
       })
     }
-  })
+  }) 
 })
-//找回员工密码
-router.post('/employee/findps', async (req, res) => {
+//新建订单
+router.post('/add/orders', async (req, res) => {
   let sel = 'SELECT* FROM user where telephone=?'
   await User.query(sel, [req.body.telephone], (err, data) => {
     if (err) {
