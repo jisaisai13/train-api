@@ -12,6 +12,19 @@ router.get('/', (req, res) => {
   }
   res.send(aaa)
 })
+function randomNum(minNum,maxNum){ 
+  switch(arguments.length){ 
+    case 1: 
+      return parseInt(Math.random()*minNum+1,10); 
+    break; 
+    case 2: 
+      return parseInt(Math.random()*(maxNum-minNum+1)+minNum,10); 
+    break; 
+      default: 
+        return 0; 
+      break; 
+  } 
+} 
 //用户注册路径
 router.post('/register', async (req, res) => {
   let sel = 'SELECT* FROM user where phone=?'
@@ -159,6 +172,22 @@ router.post('/user/passwordUpdate', async (req, res) => {
   })
 
 
+})
+//根据注册手机号查找userid
+router.post('/selectUserid/byPhone', async (req, res) => {
+  var selectSql = 'select id from user WHERE phone = ?'
+  var selectSqlParams = [req.body.user]
+  await User.query(selectSql, selectSqlParams,  (err, data) => {
+    if (err) {
+      console.log(err)
+    }
+    else {
+      return res.json({
+        code: 0,
+        data: data
+      })
+    }
+  })
 })
 //选择出发地或目的地
 router.get('/select/city', async (req, res) => {
@@ -349,85 +378,96 @@ router.post('/select/passenger/byIds', async (req, res) => {
     }
   }) 
 })
-//找回员工密码
-router.post('/employee/findps', async (req, res) => {
-  let sel = 'SELECT* FROM user where telephone=?'
-  await User.query(sel, [req.body.telephone], (err, data) => {
+//新建订单
+router.post('/add/orders', async (req, res) => {
+  let sel = 'SELECT passengerArray FROM orders where ticket_id =?'
+  await User.query(sel, [req.body.ticketid], (err, data) => {
+    if (err) {
+      console.log(err)
+    }
+    else {
+      var passengersexit = req.body.passengerids.split(',');
+      let dataArray = '';
+      data.map(item=>{  dataArray = dataArray.concat(item.passengerArray).concat(',')} )
+      const exit = passengersexit.some((item) => {return dataArray.indexOf(item+',') !== -1})
+      console.log(exit,passengersexit,dataArray)
+      if( !!exit ){
+        return res.status(200).json({
+          code: -1,
+          message: '存在乘客已购买该列车车票',
+        })
+      }else{
+        var position = ''
+        if( req.body.ishighspeed == 1 ){
+          console.log('这是高铁')
+        }else{
+          let carNumber = randomNum(3,8);
+          let seatNumber = randomNum(1,112);
+          let seatArray = []
+          for(var i=0;i<passengersexit.length;i++){
+            seatArray.push(seatNumber+i);
+          }
+          seatArray.map(item=>{  position = position.concat(carNumber+'车').concat(item+'号').concat(',')} )
+          console.log('这是火车',position)
+        }
+      }
+      const addSql = 'INSERT INTO orders (ordertime,totalprice,ticket_id,position,passengerArray,userid) VALUES(?,?,?,?,?,?)'
+      const addSqlParams = [req.body.ordertime,req.body.totalPricce,req.body.ticketid,position,req.body.passengerids,req.body.userid];
+      User.query(addSql,addSqlParams,(err,data) =>{
+        if (err) {
+          res.status(500).json({
+            code: 500,
+            message: '服务端出错'
+          })
+          console.log(err)
+        }
+        else {
+          return res.status(200).json({
+            code: 0,
+            message: '添加成功',
+            data: data
+          })
+        }
+      })
+    }
+  })
+})
+//根据userid查询本账号所有订单
+router.post('/select/orders/byUserid',async (req, res) =>{
+  const selectSql = 'select * from orders where userid = ?';
+  await User.query(selectSql, [req.body.userid],  (err, data) => {
     if (err) {
       console.log(err)
     }
     else {
       return res.json({
         code: 0,
-        message: '密码找回成功',
-        data: data,
+        message: '查询成功',
+        data: data
       })
     }
   })
 })
-//所有员工信息
-router.get('/employee/infos', async (req, res) => {
-  let sel = 'SELECT* FROM user'
-  await User.query(sel, (err, data) => {
+// 根据orderid查询订单详情
+router.post('/select/order/byOrdertime', async (req, res) => {
+  const selectSql = 'select * from orders where orderid = ?'
+  await User.query(selectSql, [req.body.orderid],  (err, data) => {
     if (err) {
       console.log(err)
     }
     else {
       return res.json({
         code: 0,
-        message: '所有员工信息',
-        data: data,
-      })
-    }
-  })
-})
-//根据工号查看工资
-router.post('/employee/salary', async (req, res) => {
-  let sel = 'SELECT* FROM salary where accounts=?'
-  await User.query(sel, [req.body.accounts], (err, data) => {
-    if (err) {
-      console.log(err)
-    }
-    else {
-      res.status(200).json({
-        code: 0,
-        message: '工资表查询成功',
+        message: '查询成功',
         data: data
       })
     }
   })
 })
-//根据id更新工资信息
-router.post('/employee/salary/edit', async (req, res) => {
-  var updateSql = 'UPDATE salary SET basicSalary=?,senioritySalary=?,postSubsidy=?,postAllowance=?,monthlyBonus=?,endowmentInsurance=?,accumulationFund=?,medicalInsurance=?,unemploymentInsurance=?,transportationSubsidy=?,performanceSalary=?,halfAward=?,annualBonus=? WHERE id = ?'
-  var updadeSqlParams = [
-    req.body.basicSalary,
-    req.body.senioritySalary,
-    req.body.postSubsidy,
-    req.body.postAllowance,
-    req.body.monthlyBonus,
-    req.body.endowmentInsurance,
-    req.body.accumulationFund,
-    req.body.medicalInsurance,
-    req.body.unemploymentInsurance,
-    req.body.transportationSubsidy,
-    req.body.performanceSalary,
-    req.body.halfAward,
-    req.body.annualBonus,
-    req.body.id,]
-  await User.query(updateSql, updadeSqlParams, (err, data) => {
-    if (err) {
-      console.log(err)
-    }
-    else {
-      res.status(200).json({
-        code: 0,
-        message: '工资表更新成功',
-        data: data
-      })
-    }
-  })
-})
+// //修改订单状态
+// router.post('/update/orderStatus', async (req, res) =>{
+
+// })
 //根据id删除工资信息
 router.post('/employee/salary/delete', async (req, res) => {
   var deleteSql = 'DELETE FROM salary WHERE id = ?'
@@ -489,49 +529,6 @@ router.get('/employees/salary', async (req, res) => {
       res.status(200).json({
         code: 0,
         message: '所有工资表查询成功',
-        data: data
-      })
-    }
-  })
-})
-//管理员登录
-router.post('/admin', async (req, res) => {
-  let sel = 'SELECT* FROM administrators where accounts=? and password=?'
-  await User.query(sel, [req.body.accounts, req.body.password], (err, data) => {
-    if (err) {
-      console.log(err)
-    }
-    if (!data[0]) {
-      res.status(200).json({
-        code: 1,
-        message: '账号或者密码错误'
-      })
-    }
-    else {
-      verify.setToken(req.body.accounts, req.body.password).then(async (token) => {
-        return res.json({
-          code: 0,
-          message: '恭喜你，欢迎登录',
-          data: data,
-          token: token,
-          signTime: setting.token.signTime
-        })
-      });
-
-    }
-  })
-})
-//根据工号获取管理员信息
-router.post('/admin/info', async (req, res) => {
-  let sel = 'SELECT* FROM administrators where accounts=?'
-  await User.query(sel, [req.body.accounts], (err, data) => {
-    if (err) {
-      console.log(err)
-    }
-    else {
-      res.status(200).json({
-        code: 0,
-        message: '管理员信息查询成功',
         data: data
       })
     }

@@ -5,5 +5,14 @@ let connection=mysql.createConnection({
     password : '123456',
     database : 'train'
 });
+function query(sql, callback) {
+    connection.getConnection(function (err, connection) {
+        connection.query(sql, function (err, rows) {
+            callback(err, rows)
+            connection.release() // 中断连接
+        })
+    })
+}
+exports.query = query
 connection.connect()
 module.exports=connection;
